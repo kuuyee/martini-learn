@@ -24,6 +24,8 @@ func New() *Martini {
 		action:   func() {},
 		logger:   log.New(os.Stdout, "[martini-learn] ", 0),
 	}
+	m.Map(m.logger)
+	m.Map(defaultReturnHandler())
 	return m
 }
 
@@ -37,6 +39,7 @@ func (m *Martini) RunOnAddr(addr string) {
 	// TODO:或许应该直接调用http.ListenAndServer，那样就可以保存martini以便后续使用
 	// 这样或许能够改善测试，可以接受一个自定义的host和port传入
 
+	//logger := m.Injector.Get(reflect.TypeOf(m.logger)).Interface().(*log.Logger)
 	logger := m.Injector.Get(reflect.TypeOf(m.logger)).Interface().(*log.Logger)
 	logger.Printf("服务器监听在 %s (%s)\n", addr, Env)
 	logger.Fatalln(http.ListenAndServe(addr, m))
