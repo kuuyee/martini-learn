@@ -1,6 +1,7 @@
 package martini
 
 import (
+	_ "fmt"
 	"log"
 	"net/http"
 	"os"
@@ -74,6 +75,12 @@ func (m *Martini) createContext(res http.ResponseWriter, req *http.Request) *con
 // 如果参数无法注入，Martini将引发panic
 type Handler interface{}
 
+func validateHandler(handler Handler) {
+	if reflect.TypeOf(handler).Kind() != reflect.Func {
+		panic("[KuuYee]===> Martini处理器必须是可调用的函数！")
+	}
+}
+
 // Context 呈现一个请求上下文。服务可以通过这个借口映射请求层
 type Context interface {
 	inject.Injector
@@ -93,7 +100,8 @@ type context struct {
 }
 
 func (c *context) Next() {
-
+	c.index += 1
+	c.run()
 }
 
 func (c *context) Written() bool {
@@ -111,6 +119,21 @@ func (c *context) handler() Handler {
 		return c.action
 	}
 	panic("错误的上下文处理器index")
+}
+
+// Action设置一个处理器，在所有的中间件处理执行完后执行，这个被用来在martini.Classic()
+// 中设置martini.Router
+func (m *Martini) Action(handler Handler) {
+	validateHandler(handler)
+	m.action = handler
+}
+
+// Use 在处理中心中加入一个中间件处理器，如果处理不能被调用则引发一个panic，处理器的
+// 调用顺序是按照加入的顺序执行的。
+func (m *Martini) Use(handler Handler) {
+	validateHandler(handler)
+
+	m.handlers = append(m.handlers, handler)
 }
 
 func (c *context) run() {

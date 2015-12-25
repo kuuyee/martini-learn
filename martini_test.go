@@ -2,18 +2,57 @@ package martini
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
+/* 测试辅助方法*/
+func expect(t *testing.T, a interface{}, b interface{}) {
+	if a != b {
+		t.Errorf("期望 %v (类型%v) - 为 %v (类型%v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+	}
+}
+
+func refute(t *testing.T, a interface{}, b interface{}) {
+	if a == b {
+		t.Errorf("不期望 %v (类型%v) - 为 %v (类型%v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+	}
+}
+
 func Test_New(t *testing.T) {
 	m := New()
-	fmt.Printf("[KuuYee]====> m=%+v", m)
+	fmt.Printf("[KuuYee]====> m=%+v\n", m)
 	if m == nil {
 		t.Error("martini.New() 不能返回nil")
 	}
 }
 
 func Test_Martini_RunOnAddr(t *testing.T) {
+	go New().RunOnAddr("127.0.0.1:8080")
+}
+
+func Test_Martini_ServeHTTP(t *testing.T) {
+	result := ""
+	response := httptest.NewRecorder()
+
 	m := New()
-	go m.RunOnAddr("127.0.0.1:8080")
+	m.Use(func(c Context) {
+		result += "foo"
+		c.Next()
+		result += "ban"
+	})
+	m.Use(func(c Context) {
+		result += "bar"
+		c.Next()
+		result += "baz"
+	})
+	m.Action(func(res http.ResponseWriter, req *http.Request) {
+		result += "bat"
+		res.WriteHeader(http.StatusBadRequest)
+	})
+	m.ServeHTTP(response, (*http.Request)(nil))
+	expect(t, result, "foobarbatbazban")
+	expect(t, response.Code, http.StatusBadRequest)
 }
