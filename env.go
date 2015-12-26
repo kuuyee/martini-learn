@@ -1,5 +1,9 @@
 package martini
 
+import (
+	"os"
+)
+
 // Envs
 const (
 	Dev  string = "开发环境"
@@ -8,3 +12,19 @@ const (
 )
 
 var Env = Dev
+var Root string
+
+func setENV(e string) {
+	if len(e) > 0 {
+		Env = e
+	}
+}
+
+func init() {
+	setENV(os.Getenv("MARTINI_ENV"))
+	var err error
+	Root, err = os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+}
