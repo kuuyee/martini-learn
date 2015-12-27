@@ -21,6 +21,7 @@ func setENV(e string) {
 }
 
 func init() {
+	// 通过环境变量读取EVN值，如果没有这种则采用默认值Dev
 	setENV(os.Getenv("MARTINI_ENV"))
 	var err error
 	Root, err = os.Getwd()
