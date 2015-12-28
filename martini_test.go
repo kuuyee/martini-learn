@@ -56,3 +56,31 @@ func Test_Martini_ServeHTTP(t *testing.T) {
 	expect(t, result, "foobarbatbazban")
 	expect(t, response.Code, http.StatusBadRequest)
 }
+
+func Test_Martini_Handlers(t *testing.T) {
+	result := ""
+	response := httptest.NewRecorder()
+
+	batman := func(c Context) {
+		result += "batman!"
+	}
+	m := New()
+	m.Use(func(c Context) {
+		result += "foo"
+		c.Next()
+		result += "ban"
+	})
+	m.Handlers(
+		batman,
+		batman,
+		batman,
+	)
+	m.Action(func(res http.ResponseWriter, req *http.Request) {
+		result += "bat"
+		res.WriteHeader(http.StatusBadRequest)
+	})
+	m.ServeHTTP(response, (*http.Request)(nil))
+
+	expect(t, result, "batman!batman!batman!bat")
+	expect(t, response.Code, http.StatusBadRequest)
+}

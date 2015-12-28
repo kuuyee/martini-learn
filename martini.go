@@ -121,6 +121,15 @@ func (c *context) handler() Handler {
 	panic("错误的上下文处理器index")
 }
 
+// Handlers 设置所有的中间件，用栈的方式保存。现有的中间件会被清楚。任何Handler如果不是
+// 可执行的函数将抛出panic
+func (m *Martini) Handlers(handlers ...Handler) {
+	m.handlers = make([]Handler, 0)
+	for _, handler := range handlers {
+		m.Use(handler)
+	}
+}
+
 // Action设置一个处理器，在所有的中间件处理执行完后执行，这个被用来在martini.Classic()
 // 中设置martini.Router
 func (m *Martini) Action(handler Handler) {
