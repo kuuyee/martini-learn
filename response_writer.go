@@ -36,6 +36,22 @@ type responseWriter struct {
 	beforeFuncs []BeforeFunc
 }
 
+func (rw *responseWriter) WriteHeader(s int) {
+	rw.callBefore()
+	rw.ResponseWriter.WriteHeader(s)
+	rw.status = s
+}
+
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	if !rw.Written() {
+		// 如果WriteHeader还没有被调用过，那么这里的status应该设置为StatusOK
+		rw.WriteHeader(http.StatusOK)
+	}
+	size, err := rw.ResponseWriter.Write(b)
+	rw.size += size
+	return size, err
+}
+
 func (rw *responseWriter) Status() int {
 	return rw.status
 }
@@ -50,4 +66,10 @@ func (rw *responseWriter) Size() int {
 
 func (rw *responseWriter) Before(before BeforeFunc) {
 	rw.beforeFuncs = append(rw.beforeFuncs, before)
+}
+
+func (rw *responseWriter) callBefore() {
+	for i := len(rw.beforeFuncs) - 1; i >= 0; i-- {
+		rw.beforeFuncs[i](rw)
+	}
 }

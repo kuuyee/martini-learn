@@ -84,3 +84,38 @@ func Test_Martini_Handlers(t *testing.T) {
 	expect(t, result, "batman!batman!batman!bat")
 	expect(t, response.Code, http.StatusBadRequest)
 }
+
+func Test_Martini_EarlyWrite(t *testing.T) {
+	result := ""
+	response := httptest.NewRecorder()
+
+	m := New()
+	m.Use(func(res http.ResponseWriter) {
+		result += "foobar"
+		res.Write([]byte("Hello world"))
+	})
+	m.Use(func() {
+		result += "bat"
+	})
+	m.Action(func(res http.ResponseWriter) {
+		result += "baz"
+		res.WriteHeader(http.StatusBadRequest)
+	})
+
+	m.ServeHTTP(response, (*http.Request)(nil))
+	expect(t, result, "foobar")
+	expect(t, response.Code, http.StatusOK)
+}
+
+func Test_Martini_Written(t *testing.T) {
+	response := httptest.NewRecorder()
+
+	m := New()
+	m.Handlers(func(res http.ResponseWriter) {
+		res.WriteHeader(http.StatusOK)
+	})
+	ctx := m.createContext(response, (*http.Request)(nil))
+	expect(t, ctx.Written(), false)
+	ctx.run()
+	expect(t, ctx.Written(), true)
+}
