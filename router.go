@@ -6,6 +6,22 @@ import (
 	"sync"
 )
 
+// Params is a map of name/value pairs for named routes. An instance of martini.
+// Params is available to be injected into any route handler.
+type Params map[string]string
+
+// Router 是Martini的路由接口,Supports HTTP verbs, stacked handlers, and dependency injection.
+type Router interface {
+	Routes
+
+	Group(string, func(Router), ...Handler)
+	Get(string, ...Handler) Route
+	Post(string, ...Handler) Route
+	AddRoute(string, string, ...Handler) Route
+	NotFound(...Handler)
+	Handle(http.ResponseWriter, *http.Request, Context)
+}
+
 type router struct {
 	routes     []*route
 	notFounds  []Handler
@@ -16,6 +32,10 @@ type router struct {
 type group struct {
 	pattern  string
 	handlers []Handler
+}
+
+func NewRouter() *router {
+	return &router{notFounds: []Handler{http.NotFound}, groups: make([]group, 0)}
 }
 
 // Route 接口用来呈现Martini的路由层
@@ -38,4 +58,15 @@ type route struct {
 	handlers []Handler
 	pattern  string
 	name     string
+}
+
+// Routes 是Martini路由层的辅助服务
+type Routes interface {
+	// URLFor 从一个给定的路由返回一个渲染过的URL，
+	// Optional params can be passed to fulfill named parameters in the route.
+	URLFor(name string, params ...interface{}) string
+	// MethodsFor returns an array of methods available for the path
+	MethodsFor(path string) []string
+	// All returns an array with all the routes in the router.
+	All() []Route
 }
